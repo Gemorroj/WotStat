@@ -28,6 +28,8 @@ import java.net.URL;
 
 public class MainActivity extends Activity {
     final String applicationId = "demo";
+    protected Integer userId = null;
+    protected String apiUrl = "http://api.worldoftanks.ru/wot/account/list/?application_id=" + applicationId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +73,7 @@ public class MainActivity extends Activity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
+            return inflater.inflate(R.layout.fragment_main, container, false);
         }
     }
 
@@ -84,18 +85,18 @@ public class MainActivity extends Activity {
         try {
             String username = ((EditText) findViewById(R.id.editText)).getText().toString();
 
-            JSONObject json = (new HttpRequest()).execute("http://api.worldoftanks.ru/wot/account/list/?application_id=" + applicationId + "&search=" + username).get();
+            JSONObject json = (new HttpRequest()).execute(this.apiUrl + "&search=" + username).get();
+            handleRequest(json);
 
+            this.userId = json.getJSONArray("data").getJSONObject(0).getInt("account_id");
 
             TextView resultTextViewWN6 = (TextView) findViewById(R.id.resultTextViewWN6);
             resultTextViewWN6.setText(json.toString());
 
             TextView resultTextViewWN8 = (TextView) findViewById(R.id.resultTextViewWN8);
-            resultTextViewWN8.setText("Hello Kitty!");
-
-
+            resultTextViewWN8.setText(this.userId.toString());
         } catch (Exception e) {
-            createErrorMessage(e.toString());
+            createErrorMessage(e.getMessage());
         }
     }
 
@@ -112,6 +113,22 @@ public class MainActivity extends Activity {
     }
 
 
+    protected void handleRequest(JSONObject json) throws Exception
+    {
+        if (null == json) {
+            throw new Exception("Неизвестная ошибка.");
+        }
+
+        if (!json.getString("status").equals("ok")) {
+            throw new Exception(json.getJSONObject("error").getString("message"));
+        }
+
+        if (json.getInt("count") != 1) {
+            throw new Exception("Найдено " + String.valueOf(json.getInt("count")) + " пользователей.");
+        }
+    }
+
+
     private class HttpRequest extends AsyncTask<String, Void, JSONObject> {
         private ProgressDialog spinner;
 
@@ -119,11 +136,13 @@ public class MainActivity extends Activity {
         protected void onPreExecute() {
             spinner = new ProgressDialog(MainActivity.this);
             spinner.setMessage("Load...");
+            spinner.setIndeterminate(false);
+            spinner.setCancelable(true);
             spinner.show();
         }
 
         @Override
-        protected void onPostExecute(JSONObject result) {
+        protected void onPostExecute(JSONObject json) {
             spinner.dismiss();
         }
 
@@ -151,10 +170,10 @@ public class MainActivity extends Activity {
                     urlConnection.disconnect();
                 }
             } catch (Exception e) {
-                createErrorMessage(e.toString());
+                e.printStackTrace();
             }
 
-            return new JSONObject();
+            return null;
         }
     }
 }

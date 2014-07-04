@@ -49,21 +49,21 @@ tools:context=".MainActivity$PlaceholderFragment">
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="\?"
         android:id="@+id/resultTextViewWN8"
-        android:layout_above="@+id/textViewWN6"
+        android:layout_gravity="right"
+        android:layout_alignTop="@+id/textViewWN8"
         android:layout_alignLeft="@+id/resultTextViewWN6"
-        android:layout_alignStart="@+id/resultTextViewWN6"
-        android:layout_gravity="right" />
+        android:layout_alignStart="@+id/resultTextViewWN6" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="75dp"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="WN6:"
         android:id="@+id/textViewWN6"
-        android:layout_below="@+id/textViewWN8"
+        android:layout_below="@+id/textViewWN7"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="22dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -76,5 +76,68 @@ tools:context=".MainActivity$PlaceholderFragment">
         android:layout_alignParentEnd="true"
         android:layout_marginRight="22dp"
         android:layout_gravity="right" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="WN7:"
+        android:id="@+id/textViewWN7"
+        android:layout_below="@+id/textViewWN8"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="\?"
+        android:id="@+id/resultTextViewWN7"
+        android:layout_alignTop="@+id/textViewWN7"
+        android:layout_alignLeft="@+id/resultTextViewWN6"
+        android:layout_alignStart="@+id/resultTextViewWN6" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="РЭ:"
+        android:id="@+id/textViewPf"
+        android:layout_below="@+id/textViewWN6"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Броне-сайт:"
+        android:id="@+id/textViewArmorSite"
+        android:layout_marginTop="26dp"
+        android:layout_below="@+id/textViewPf"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="\?"
+        android:id="@+id/resultTextViewPf"
+        android:layout_alignTop="@+id/textViewPf"
+        android:layout_alignLeft="@+id/resultTextViewWN6"
+        android:layout_alignStart="@+id/resultTextViewWN6" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="\?"
+        android:id="@+id/resultTextViewArmorSite"
+        android:layout_alignTop="@+id/textViewArmorSite"
+        android:layout_alignLeft="@+id/resultTextViewPf"
+        android:layout_alignStart="@+id/resultTextViewPf" />
 
 </RelativeLayout>

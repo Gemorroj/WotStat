@@ -140,4 +140,46 @@ tools:context=".MainActivity$PlaceholderFragment">
         android:layout_alignLeft="@+id/resultTextViewPf"
         android:layout_alignStart="@+id/resultTextViewPf" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Личный рейтинг:"
+        android:id="@+id/textViewRbr"
+        android:layout_below="@+id/textViewArmorSite"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="27dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="\?"
+        android:id="@+id/resultTextViewRbr"
+        android:layout_alignBottom="@+id/textViewRbr"
+        android:layout_alignRight="@+id/resultTextViewArmorSite"
+        android:layout_alignEnd="@+id/resultTextViewArmorSite" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Win:"
+        android:id="@+id/textViewWin"
+        android:layout_above="@+id/resultTextViewWN8"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="22dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="\?"
+        android:id="@+id/resultTextViewWin"
+        android:layout_alignTop="@+id/textViewWin"
+        android:layout_alignRight="@+id/resultTextViewWN8"
+        android:layout_alignEnd="@+id/resultTextViewWN8" />
+
 </RelativeLayout>

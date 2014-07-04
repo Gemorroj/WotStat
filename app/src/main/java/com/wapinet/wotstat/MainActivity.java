@@ -29,7 +29,7 @@ import java.net.URL;
 public class MainActivity extends Activity
 {
     final String applicationId = "demo";
-    protected Integer userId = null;
+    protected int userId;
     protected String apiListUrl = "http://api.worldoftanks.ru/wot/account/list/?application_id=" + applicationId;
     protected String apiRatingsUrl = "http://api.worldoftanks.ru/wot/ratings/accounts/?application_id=" + applicationId;
 
@@ -85,47 +85,64 @@ public class MainActivity extends Activity
     }
 
 
+    public int getUserId()
+    {
+        return this.userId;
+    }
+
+    /**
+     * @param username Username
+     * @throws Exception
+     */
+    protected void setUserIdFromUsername(String username) throws Exception
+    {
+        JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&search=" + username).get();
+        handleRequest(list);
+
+        this.userId = list.getJSONArray("data").getJSONObject(0).getInt("account_id");
+    }
+
     /**
      * @param v Button view
      */
     public void buttonSearchClick(View v)
     {
         try {
+
             String username = ((EditText) findViewById(R.id.editText)).getText().toString();
+            setUserIdFromUsername(username);
 
-            JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&search=" + username).get();
-            handleRequest(list);
-
-            this.userId = list.getJSONArray("data").getJSONObject(0).getInt("account_id");
-
-
-            JSONObject rating = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + this.userId).get();
+            JSONObject rating = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + getUserId()).get();
             handleRequest(rating);
 
 
+            TextView resultTextViewWin = (TextView) findViewById(R.id.resultTextViewWin);
+            resultTextViewWin.setText(calculateWinRating(rating));
 
             TextView resultTextViewWN6 = (TextView) findViewById(R.id.resultTextViewWN6);
-            resultTextViewWN6.setText(calculateWn6Rating(rating).toString());
+            resultTextViewWN6.setText(calculateWn6Rating(rating));
 
             TextView resultTextViewWN7 = (TextView) findViewById(R.id.resultTextViewWN7);
-            resultTextViewWN7.setText(calculateWn7Rating(rating).toString());
+            resultTextViewWN7.setText(calculateWn7Rating(rating));
 
             TextView resultTextViewWN8 = (TextView) findViewById(R.id.resultTextViewWN8);
-            resultTextViewWN8.setText(calculateWn8Rating(rating).toString());
+            resultTextViewWN8.setText(calculateWn8Rating(rating));
 
             TextView resultTextViewPf = (TextView) findViewById(R.id.resultTextViewPf);
-            resultTextViewPf.setText(calculatePfRating(rating).toString());
+            resultTextViewPf.setText(calculatePfRating(rating));
 
             TextView resultTextViewArmorSite = (TextView) findViewById(R.id.resultTextViewArmorSite);
-            resultTextViewArmorSite.setText(calculateArmorSiteRating(rating).toString());
+            resultTextViewArmorSite.setText(calculateArmorSiteRating(rating));
 
+            TextView resultTextViewRbr = (TextView) findViewById(R.id.resultTextViewRbr);
+            resultTextViewRbr.setText(calculateRbrRating(rating));
         } catch (Exception e) {
             createErrorMessage(e.getMessage());
         }
     }
 
 
-    protected Integer calculateWn8Rating(JSONObject data)
+    protected String calculateWn8Rating(JSONObject rating)
     {
         /*
         Формула WN8:
@@ -165,10 +182,10 @@ public class MainActivity extends Activity
         expWinRate - ожидаемое количество побед.
          */
 
-        return new Integer(123);
+        return "123";
     }
 
-    protected Integer calculateWn7Rating(JSONObject data)
+    protected String calculateWn7Rating(JSONObject rating)
     {
         /*
         Формула WN7:
@@ -191,10 +208,10 @@ public class MainActivity extends Activity
         TOTAL – общее кол-во боёв.
          */
 
-        return new Integer(123);
+        return "123";
     }
 
-    protected Integer calculateWn6Rating(JSONObject data)
+    protected String calculateWn6Rating(JSONObject rating)
     {
         /*
         Формула WN6:
@@ -217,11 +234,11 @@ public class MainActivity extends Activity
         TOTAL – общее кол-во боёв.
          */
 
-        return new Integer(123);
+        return "123";
     }
 
 
-    protected Integer calculateEffRating(JSONObject data)
+    protected String calculateEffRating(JSONObject rating)
     {
         /*
         Формула:
@@ -241,11 +258,11 @@ public class MainActivity extends Activity
         DEF - среднее количество очков защиты базы за бой.
          */
 
-        return new Integer(123);
+        return "123";
     }
 
 
-    protected Integer calculatePfRating(JSONObject data)
+    protected String calculatePfRating(JSONObject rating)
     {
         /*
         Формула:
@@ -265,11 +282,11 @@ public class MainActivity extends Activity
         DEF - среднее количество очков защиты базы за бой.
          */
 
-        return new Integer(123);
+        return "123";
     }
 
 
-    protected Integer calculateArmorSiteRating(JSONObject data)
+    protected String calculateArmorSiteRating(JSONObject rating)
     {
         /*
         Формула:
@@ -292,7 +309,30 @@ public class MainActivity extends Activity
         DEF - среднее количество очков защиты базы за бой.
          */
 
-        return new Integer(123);
+
+
+
+        return "123";
+    }
+
+
+    protected String calculateRbrRating(JSONObject rating)
+    {
+        try {
+            return rating.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("global_rating").getString("value");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+
+    protected String calculateWinRating(JSONObject rating)
+    {
+        try {
+            return rating.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("wins_ratio").getString("value") + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
 
@@ -326,7 +366,7 @@ public class MainActivity extends Activity
         }
 
         if (data.getInt("count") != 1) {
-            throw new Exception("Найдено " + String.valueOf(data.getInt("count")) + " пользователей.");
+            throw new Exception("Найдено " + data.getString("count") + " пользователей.");
         }
     }
 

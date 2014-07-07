@@ -29,9 +29,16 @@ import java.net.URL;
 public class MainActivity extends Activity
 {
     final String applicationId = "demo";
-    protected int userId;
+
+    protected Integer userId;
+    protected JSONObject ratings;
+    protected JSONObject stats;
+    protected JSONObject encyclopedia;
+
     protected String apiListUrl = "http://api.worldoftanks.ru/wot/account/list/?application_id=" + applicationId;
     protected String apiRatingsUrl = "http://api.worldoftanks.ru/wot/ratings/accounts/?application_id=" + applicationId;
+    protected String apiStatsUrl = "http://api.worldoftanks.ru/wot/tanks/stats/?application_id=" + applicationId;
+    protected String apiEncyclopediaUrl = "http://api.worldoftanks.ru/wot/encyclopedia/tanks/?application_id=" + applicationId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -85,16 +92,55 @@ public class MainActivity extends Activity
     }
 
 
-    public int getUserId()
+    public Integer getUserId()
     {
         return this.userId;
+    }
+
+    public JSONObject getRatings() throws Exception
+    {
+        if (this.ratings == null) {
+            // типы:
+            // 1, 7, 28, all
+            JSONObject ratings = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=7&account_id=" + getUserId()).get();
+            handleRequest(ratings);
+
+            this.ratings = ratings.getJSONObject("data").getJSONObject(String.valueOf(getUserId()));
+        }
+
+        return this.ratings;
+    }
+
+
+    public JSONObject getEncyclopedia() throws Exception
+    {
+        if (this.encyclopedia == null) {
+            JSONObject encyclopedia = (new HttpRequest()).execute(this.apiEncyclopediaUrl).get();
+            handleRequest(encyclopedia, false);
+
+            this.encyclopedia = encyclopedia.getJSONObject("data");
+        }
+
+        return this.encyclopedia;
+    }
+
+    public JSONObject getStats() throws Exception
+    {
+        if (this.stats == null) {
+            JSONObject stats = (new HttpRequest()).execute(this.apiStatsUrl + "&account_id=" + getUserId()).get();
+            handleRequest(stats);
+
+            this.stats = stats.getJSONObject("data").getJSONArray(String.valueOf(getUserId())).getJSONObject(0);
+        }
+
+        return this.stats;
     }
 
     /**
      * @param username Username
      * @throws Exception
      */
-    protected void setUserIdFromUsername(String username) throws Exception
+    private void setUserIdFromUsername(String username) throws Exception
     {
         JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&search=" + username).get();
         handleRequest(list);
@@ -103,46 +149,54 @@ public class MainActivity extends Activity
     }
 
     /**
+     * @param username Username
+     * @throws Exception
+     */
+    protected void load(String username) throws Exception
+    {
+        this.userId = null;
+        this.stats = null;
+        this.ratings = null;
+
+        setUserIdFromUsername(username);
+    }
+
+    /**
      * @param v Button view
      */
     public void buttonSearchClick(View v)
     {
         try {
-
             String username = ((EditText) findViewById(R.id.editText)).getText().toString();
-            setUserIdFromUsername(username);
-
-            JSONObject rating = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + getUserId()).get();
-            handleRequest(rating);
-
+            load(username);
 
             TextView resultTextViewWin = (TextView) findViewById(R.id.resultTextViewWin);
-            resultTextViewWin.setText(calculateWinRating(rating));
+            resultTextViewWin.setText(calculateWinRating());
 
             TextView resultTextViewWN6 = (TextView) findViewById(R.id.resultTextViewWN6);
-            resultTextViewWN6.setText(calculateWn6Rating(rating));
+            resultTextViewWN6.setText(calculateWn6Rating());
 
             TextView resultTextViewWN7 = (TextView) findViewById(R.id.resultTextViewWN7);
-            resultTextViewWN7.setText(calculateWn7Rating(rating));
+            resultTextViewWN7.setText(calculateWn7Rating());
 
             TextView resultTextViewWN8 = (TextView) findViewById(R.id.resultTextViewWN8);
-            resultTextViewWN8.setText(calculateWn8Rating(rating));
+            resultTextViewWN8.setText(calculateWn8Rating());
 
             TextView resultTextViewPf = (TextView) findViewById(R.id.resultTextViewPf);
-            resultTextViewPf.setText(calculatePfRating(rating));
+            resultTextViewPf.setText(calculatePfRating());
 
             TextView resultTextViewArmorSite = (TextView) findViewById(R.id.resultTextViewArmorSite);
-            resultTextViewArmorSite.setText(calculateArmorSiteRating(rating));
+            resultTextViewArmorSite.setText(calculateArmorSiteRating());
 
             TextView resultTextViewRbr = (TextView) findViewById(R.id.resultTextViewRbr);
-            resultTextViewRbr.setText(calculateRbrRating(rating));
+            resultTextViewRbr.setText(calculateRbrRating());
         } catch (Exception e) {
             createErrorMessage(e.getMessage());
         }
     }
 
 
-    protected String calculateWn8Rating(JSONObject rating)
+    protected String calculateWn8Rating()
     {
         /*
         Формула WN8:
@@ -185,7 +239,7 @@ public class MainActivity extends Activity
         return "123";
     }
 
-    protected String calculateWn7Rating(JSONObject rating)
+    protected String calculateWn7Rating()
     {
         /*
         Формула WN7:
@@ -211,7 +265,7 @@ public class MainActivity extends Activity
         return "123";
     }
 
-    protected String calculateWn6Rating(JSONObject rating)
+    protected String calculateWn6Rating()
     {
         /*
         Формула WN6:
@@ -238,7 +292,7 @@ public class MainActivity extends Activity
     }
 
 
-    protected String calculateEffRating(JSONObject rating)
+    protected String calculateEffRating()
     {
         /*
         Формула:
@@ -262,7 +316,7 @@ public class MainActivity extends Activity
     }
 
 
-    protected String calculatePfRating(JSONObject rating)
+    protected String calculatePfRating()
     {
         /*
         Формула:
@@ -282,11 +336,23 @@ public class MainActivity extends Activity
         DEF - среднее количество очков защиты базы за бой.
          */
 
+        try {
+            JSONObject ratings = getRatings();
+            JSONObject stats = getStats();
+            JSONObject encyclopedia = getEncyclopedia();
+
+            int damage = ratings.getJSONObject("damage_avg").getInt("value");
+
+            //return ratings.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("wins_ratio").getString("value") + "%";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+
         return "123";
     }
 
 
-    protected String calculateArmorSiteRating(JSONObject rating)
+    protected String calculateArmorSiteRating()
     {
         /*
         Формула:
@@ -316,20 +382,22 @@ public class MainActivity extends Activity
     }
 
 
-    protected String calculateRbrRating(JSONObject rating)
+    protected String calculateRbrRating()
     {
         try {
-            return rating.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("global_rating").getString("value");
+            JSONObject ratings = getRatings();
+            return ratings.getJSONObject("global_rating").getString("value");
         } catch (Exception e) {
             return "";
         }
     }
 
 
-    protected String calculateWinRating(JSONObject rating)
+    protected String calculateWinRating()
     {
         try {
-            return rating.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("wins_ratio").getString("value") + "%";
+            JSONObject ratings = getRatings();
+            return ratings.getJSONObject("wins_ratio").getString("value") + "%";
         } catch (Exception e) {
             return "";
         }
@@ -350,6 +418,19 @@ public class MainActivity extends Activity
         ).show();
     }
 
+    /**
+     * @param data JSON object
+     * @param handleCount Кидает исключение если результатов больше нуля. По умолчанию true.
+     * @throws Exception
+     */
+    protected void handleRequest(JSONObject data, boolean handleCount) throws Exception
+    {
+        handleRequest(data);
+
+        if (handleCount != false && data.getInt("count") != 1) {
+            throw new Exception("Найдено " + data.getString("count") + " результатов.");
+        }
+    }
 
     /**
      * @param data JSON object
@@ -364,12 +445,7 @@ public class MainActivity extends Activity
         if (!data.getString("status").equals("ok")) {
             throw new Exception(data.getJSONObject("error").getString("message"));
         }
-
-        if (data.getInt("count") != 1) {
-            throw new Exception("Найдено " + data.getString("count") + " пользователей.");
-        }
     }
-
 
     /**
      * Async http request

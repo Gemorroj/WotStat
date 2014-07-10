@@ -34,7 +34,7 @@ import java.util.Map;
 
 public class MainActivity extends Activity
 {
-    final String applicationId = "demo";
+    final String applicationId = "061b17defde7546663e216dd1210055f";
 
     protected Integer userId;
     protected JSONObject ratings;
@@ -103,20 +103,6 @@ public class MainActivity extends Activity
         return this.userId;
     }
 
-    public JSONObject getRatings() throws Exception
-    {
-        if (this.ratings == null) {
-            // типы:
-            // 1, 7, 28, all
-            JSONObject ratings = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + getUserId().toString()).get();
-            handleRequest(ratings);
-
-            this.ratings = ratings.getJSONObject("data").getJSONObject(getUserId().toString());
-        }
-
-        return this.ratings;
-    }
-
 
     public JSONObject getEncyclopedia() throws Exception
     {
@@ -142,13 +128,32 @@ public class MainActivity extends Activity
         return this.stats;
     }
 
+
+    /**
+     * @deprecated
+     * @return JSONObject
+     * @throws Exception
+     */
+    public JSONObject getRatings() throws Exception
+    {
+        if (this.ratings == null) {
+            // типы: 1, 7, 28, all
+            JSONObject ratings = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + getUserId().toString()).get();
+            handleRequest(ratings);
+
+            this.ratings = ratings.getJSONObject("data").getJSONObject(getUserId().toString());
+        }
+
+        return this.ratings;
+    }
+
     /**
      * @param username Username
      * @throws Exception
      */
     private void setUserIdFromUsername(String username) throws Exception
     {
-        JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&search=" + username).get();
+        JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&type=exact&search=" + username).get();
         handleRequest(list);
 
         this.userId = list.getJSONArray("data").getJSONObject(0).getInt("account_id");
@@ -163,6 +168,7 @@ public class MainActivity extends Activity
         this.userId = null;
         this.stats = null;
         this.ratings = null;
+        this.encyclopedia = null;
 
         setUserIdFromUsername(username);
     }
@@ -242,7 +248,7 @@ public class MainActivity extends Activity
         expWinRate - ожидаемое количество побед.
          */
 
-        return "123";
+        return "???";
     }
 
     protected String calculateWn7Rating()
@@ -268,7 +274,7 @@ public class MainActivity extends Activity
         TOTAL – общее кол-во боёв.
          */
 
-        return "123";
+        return "???";
     }
 
     protected String calculateWn6Rating()
@@ -294,7 +300,7 @@ public class MainActivity extends Activity
         TOTAL – общее кол-во боёв.
          */
 
-        return "123";
+        return "???";
     }
 
 
@@ -318,7 +324,7 @@ public class MainActivity extends Activity
         DEF - среднее количество очков защиты базы за бой.
          */
 
-        return "123";
+        return "???";
     }
 
 
@@ -326,7 +332,6 @@ public class MainActivity extends Activity
     {
         /*
         Формула:
-
         DAMAGE * (10 / (TIER + 2)) * (0.23 + 2*TIER / 100) +
         FRAGS * 250 +
         SPOT * 150 +
@@ -343,49 +348,155 @@ public class MainActivity extends Activity
          */
 
         try {
-            return roundDouble(getTier(), 2).toString();
+            int battles = getBattles();
+            int damage = getDamage();
+            int frags = getFrags();
+            int spotted = getSpotted();
+            int capturePoints = getCapturePoints();
+            int droppedCapturePoints = getDroppedCapturePoints();
 
-/*
-            JSONObject ratings = getRatings();
-            JSONArray stats = getStats();
-            JSONObject encyclopedia = getEncyclopedia();
+            Double tier = getTier();
+            double damageAvg = 1.0 * damage / battles;
+            double fragsAvg = 1.0 * frags / battles;
+            double spottedAvg = 1.0 * spotted / battles;
+            double capturePointsAvg = 1.0 * capturePoints / battles;
+            double droppedCapturePointsAvg = 1.0 * droppedCapturePoints / battles;
 
-            int damage = ratings.getJSONObject("damage_avg").getInt("value");
-*/
-            //return ratings.getJSONObject("data").getJSONObject(getUserId().toString()).getJSONObject("wins_ratio").getString("value") + "%";
+            double pf = damageAvg * (10 / (tier + 2)) * (0.23 + 2 * tier / 100) +
+                    fragsAvg * 250 +
+                    spottedAvg * 150 +
+                    this.log(capturePointsAvg + 1.0, 1.732) * 150 +
+                    droppedCapturePointsAvg * 150;
+
+            return String.valueOf(Math.round(pf));
         } catch (Exception e) {
             return e.getMessage();
         }
-
-        //return "123";
     }
 
 
-    /**
-     * @param d number
-     * @param scale scale
-     * @return Double
-     */
-    protected Double roundDouble (double d, int scale)
+    protected double log (double num, double base)
     {
-        Double dd = Math.pow(10, scale);
-        return Math.round(d * dd) / dd;
+        return Math.log(num) / Math.log(base);
     }
 
 
+    protected int getDroppedCapturePoints() throws Exception
+    {
+        JSONArray stats = getStats();
+        int droppedCapturePoints = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            droppedCapturePoints += row.getJSONObject("all").getInt("dropped_capture_points");
+
+        }
+
+        return droppedCapturePoints;
+    }
+
+    protected int getCapturePoints() throws Exception
+    {
+        JSONArray stats = getStats();
+        int capturePoints = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            capturePoints += row.getJSONObject("all").getInt("capture_points");
+
+        }
+
+        return capturePoints;
+    }
+
+    protected int getSpotted() throws Exception
+    {
+        JSONArray stats = getStats();
+        int spotted = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            spotted += row.getJSONObject("all").getInt("spotted");
+
+        }
+
+        return spotted;
+    }
+
+    protected int getFrags() throws Exception
+    {
+        JSONArray stats = getStats();
+        int frags = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            frags += row.getJSONObject("all").getInt("frags");
+
+        }
+
+        return frags;
+    }
+
+    protected int getBattles() throws Exception
+    {
+        JSONArray stats = getStats();
+        int battles = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            battles += row.getJSONObject("all").getInt("battles");
+
+        }
+
+        return battles;
+    }
+
+    protected int getDamage() throws Exception
+    {
+        JSONArray stats = getStats();
+        int damage = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            damage += row.getJSONObject("all").getInt("damage_dealt");
+
+        }
+
+        return damage;
+    }
+
+
+    protected int getGlobalRating() throws Exception
+    {
+        return getRatings().getJSONObject("global_rating").getInt("value");
+    }
+
+
+    protected Double getWinsRatio() throws Exception
+    {
+        return getRatings().getJSONObject("wins_ratio").getDouble("value");
+    }
+
+
+
     /**
+     * средний уровень танков = (БоевНаУровне1*1+БоевНаУровне2*2+....+БОевНауровне10*10)/БОевВсего
+     *
      * @return Double
      * @throws Exception
      */
     protected Double getTier() throws Exception
     {
-        // средний уровень танков = (БоевНаУровне1*1+БоевНаУровне2*2+....+БОевНауровне10*10)/БОевВсего
-
         Double tier = 0.0;
 
         JSONArray stats = getStats();
         JSONObject encyclopedia = getEncyclopedia();
-        JSONObject ratings = getRatings();
         SparseIntArray tanks = new SparseIntArray();
 
         for (int i = 0; i < stats.length(); i++) {
@@ -407,7 +518,8 @@ public class MainActivity extends Activity
             tier += (level * battles);
         }
 
-        int battlesCount = ratings.getJSONObject("battles_count").getInt("value");
+        int battlesCount = getBattles();
+
         return (tier / battlesCount);
     }
 
@@ -438,15 +550,14 @@ public class MainActivity extends Activity
 
 
 
-        return "123";
+        return "???";
     }
 
 
     protected String calculateRbrRating()
     {
         try {
-            JSONObject ratings = getRatings();
-            return ratings.getJSONObject("global_rating").getString("value");
+            return String.valueOf(getGlobalRating());
         } catch (Exception e) {
             return "";
         }
@@ -456,8 +567,7 @@ public class MainActivity extends Activity
     protected String calculateWinRating()
     {
         try {
-            JSONObject ratings = getRatings();
-            return ratings.getJSONObject("wins_ratio").getString("value") + "%";
+            return String.valueOf(getWinsRatio()) + "%";
         } catch (Exception e) {
             return "";
         }

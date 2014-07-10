@@ -246,6 +246,9 @@ public class MainActivity extends Activity
         expFrag - ожидаемое количество уничтоженных,
         expDef - ожидаемое количество очков защиты,
         expWinRate - ожидаемое количество побед.
+
+
+        http://dev.modxvm.com/xvm/pull-request/5/wn8-in-battle-result/diff#Lsrc/xvm/src/xvm/hangar/components/BattleResults/CommonView.asT342
          */
 
         return "???";
@@ -375,11 +378,99 @@ public class MainActivity extends Activity
     }
 
 
+
+    protected String calculateArmorSiteRating()
+    {
+        /*
+        Формула:
+
+        (ln B)/10* Hp* 1.0+
+        (ln B)/10*D*WINRATE*2+
+        (ln B)/10*D*FRAGS*0.9+
+        (ln B)/10*D*SPOT*0.5+
+        (ln B)/10*D*CAP*0.5+
+        (ln B)/10*D*DEF*0.5
+
+        Параметры, участвующие в расчете:
+        D – средний урон за бой,
+        В- общее количество боёв,
+        Нр- средний опыт за бой,
+        WINRATE - процент побед игрока,
+        FRAGS – среднее количество фрагов за бой,
+        SPOT - среднее количество обнаруженных противников за бой,
+        CAP – среднее количество очков захвата за бой,
+        DEF - среднее количество очков защиты базы за бой.
+
+
+        (LN(A)/10)*(B+(C*((2*D)+(0,9*E)+(0,5*F)+(0,5*G)+(0,5*H))))
+
+
+        https://github.com/isida/4/blob/3bb8c02cc713cf42e1bb497d7277d998afd951ae/plugins/wot.py#L199
+         */
+
+
+        try {
+            int battles = getBattles();
+            int xp = getXp();
+            int damage = getDamage();
+            int frags = getFrags();
+            int spotted = getSpotted();
+            int capturePoints = getCapturePoints();
+            int droppedCapturePoints = getDroppedCapturePoints();
+            Double winsRatio = getWinsRatio();
+
+            double damageAvg = 1.0 * damage / battles;
+            double xpAvg = 1.0 * xp / battles;
+            double fragsAvg = 1.0 * frags / battles;
+            double spottedAvg = 1.0 * spotted / battles;
+            double capturePointsAvg = 1.0 * capturePoints / battles;
+            double droppedCapturePointsAvg = 1.0 * droppedCapturePoints / battles;
+
+             	//armor = math.log(stat_rnd('battles')) / 10 * (stat_rnd('xp')/float(stat_rnd('battles')) + stat_rnd('damage_dealt')/float(stat_rnd('battles')) * (stat_rnd('wins') * 2 + stat_rnd('frags') * 0.9 + (stat_rnd('spotted') + stat_rnd('capture_points') + stat_rnd('dropped_capture_points')) * 0.5)/float(stat_rnd('battles')))
+
+            double armorSite = (this.log(battles) / 10.0) * ((xpAvg) + (damageAvg) * (winsRatio * 2.0 + frags * 0.9 + (spotted + capturePoints + droppedCapturePoints) * 0.5) / battles);
+            double armorSite2 = (this.log(battles) / 10.0) * (
+                    xpAvg + (
+                            damageAvg * (
+                                    (winsRatio * 2.0) +
+                                    (fragsAvg * 0.9) +
+                                    (spottedAvg * 0.5) +
+                                    (capturePointsAvg * 0.5) +
+                                    (droppedCapturePointsAvg * 0.5)
+                            )
+                    )
+            );
+
+            return String.valueOf(Math.round(armorSite));
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+
+
+    protected int getGlobalRating() throws Exception
+    {
+        return getRatings().getJSONObject("global_rating").getInt("value");
+    }
+
+
+    protected Double getWinsRatio() throws Exception
+    {
+        return getRatings().getJSONObject("wins_ratio").getDouble("value");
+    }
+
+
+
     protected double log (double num, double base)
     {
         return Math.log(num) / Math.log(base);
     }
 
+    protected double log (double num)
+    {
+        return Math.log(num);
+    }
 
     protected int getDroppedCapturePoints() throws Exception
     {
@@ -410,6 +501,23 @@ public class MainActivity extends Activity
 
         return capturePoints;
     }
+
+
+    protected int getXp() throws Exception
+    {
+        JSONArray stats = getStats();
+        int battleAvgXp = 0;
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+
+            battleAvgXp += row.getJSONObject("all").getInt("xp");
+
+        }
+
+        return battleAvgXp;
+    }
+
 
     protected int getSpotted() throws Exception
     {
@@ -472,19 +580,6 @@ public class MainActivity extends Activity
     }
 
 
-    protected int getGlobalRating() throws Exception
-    {
-        return getRatings().getJSONObject("global_rating").getInt("value");
-    }
-
-
-    protected Double getWinsRatio() throws Exception
-    {
-        return getRatings().getJSONObject("wins_ratio").getDouble("value");
-    }
-
-
-
     /**
      * средний уровень танков = (БоевНаУровне1*1+БоевНаУровне2*2+....+БОевНауровне10*10)/БОевВсего
      *
@@ -521,36 +616,6 @@ public class MainActivity extends Activity
         int battlesCount = getBattles();
 
         return (tier / battlesCount);
-    }
-
-
-    protected String calculateArmorSiteRating()
-    {
-        /*
-        Формула:
-
-        (ln B)/10* Hp* 1.0+
-        (ln B)/10*D*WINRATE*2+
-        (ln B)/10*D*FRAGS*0.9+
-        (ln B)/10*D*SPOT*0.5+
-        (ln B)/10*D*CAP*0.5+
-        (ln B)/10*D*DEF*0.5
-
-        Параметры, участвующие в расчете:
-        D – средний урон за бой,
-        В- общее количество боёв,
-        Нр- средний опыт за бой,
-        WINRATE - процент побед игрока,
-        FRAGS – среднее количество фрагов за бой,
-        SPOT - среднее количество обнаруженных противников за бой,
-        CAP – среднее количество очков захвата за бой,
-        DEF - среднее количество очков защиты базы за бой.
-         */
-
-
-
-
-        return "???";
     }
 
 

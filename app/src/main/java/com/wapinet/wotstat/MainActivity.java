@@ -7,6 +7,7 @@ import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +17,7 @@ import android.os.Build;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -24,6 +26,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 
 public class MainActivity extends Activity
@@ -32,7 +38,7 @@ public class MainActivity extends Activity
 
     protected Integer userId;
     protected JSONObject ratings;
-    protected JSONObject stats;
+    protected JSONArray stats;
     protected JSONObject encyclopedia;
 
     protected String apiListUrl = "http://api.worldoftanks.ru/wot/account/list/?application_id=" + applicationId;
@@ -102,10 +108,10 @@ public class MainActivity extends Activity
         if (this.ratings == null) {
             // типы:
             // 1, 7, 28, all
-            JSONObject ratings = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=7&account_id=" + getUserId()).get();
+            JSONObject ratings = (new HttpRequest()).execute(this.apiRatingsUrl + "&type=all&account_id=" + getUserId().toString()).get();
             handleRequest(ratings);
 
-            this.ratings = ratings.getJSONObject("data").getJSONObject(String.valueOf(getUserId()));
+            this.ratings = ratings.getJSONObject("data").getJSONObject(getUserId().toString());
         }
 
         return this.ratings;
@@ -124,13 +130,13 @@ public class MainActivity extends Activity
         return this.encyclopedia;
     }
 
-    public JSONObject getStats() throws Exception
+    public JSONArray getStats() throws Exception
     {
         if (this.stats == null) {
-            JSONObject stats = (new HttpRequest()).execute(this.apiStatsUrl + "&account_id=" + getUserId()).get();
+            JSONObject stats = (new HttpRequest()).execute(this.apiStatsUrl + "&account_id=" + getUserId().toString()).get();
             handleRequest(stats);
 
-            this.stats = stats.getJSONObject("data").getJSONArray(String.valueOf(getUserId())).getJSONObject(0);
+            this.stats = stats.getJSONObject("data").getJSONArray(getUserId().toString());
         }
 
         return this.stats;
@@ -337,18 +343,72 @@ public class MainActivity extends Activity
          */
 
         try {
+            return roundDouble(getTier(), 2).toString();
+
+/*
             JSONObject ratings = getRatings();
-            JSONObject stats = getStats();
+            JSONArray stats = getStats();
             JSONObject encyclopedia = getEncyclopedia();
 
             int damage = ratings.getJSONObject("damage_avg").getInt("value");
-
-            //return ratings.getJSONObject("data").getJSONObject(String.valueOf(getUserId())).getJSONObject("wins_ratio").getString("value") + "%";
+*/
+            //return ratings.getJSONObject("data").getJSONObject(getUserId().toString()).getJSONObject("wins_ratio").getString("value") + "%";
         } catch (Exception e) {
             return e.getMessage();
         }
 
-        return "123";
+        //return "123";
+    }
+
+
+    /**
+     * @param d number
+     * @param scale scale
+     * @return Double
+     */
+    protected Double roundDouble (double d, int scale)
+    {
+        Double dd = Math.pow(10, scale);
+        return Math.round(d * dd) / dd;
+    }
+
+
+    /**
+     * @return Double
+     * @throws Exception
+     */
+    protected Double getTier() throws Exception
+    {
+        // средний уровень танков = (БоевНаУровне1*1+БоевНаУровне2*2+....+БОевНауровне10*10)/БОевВсего
+
+        Double tier = 0.0;
+
+        JSONArray stats = getStats();
+        JSONObject encyclopedia = getEncyclopedia();
+        JSONObject ratings = getRatings();
+        SparseIntArray tanks = new SparseIntArray();
+
+        for (int i = 0; i < stats.length(); i++) {
+            JSONObject row = stats.getJSONObject(i);
+            tanks.put(
+                row.getInt("tank_id"),
+                row.getJSONObject("all").getInt("battles")
+            );
+        }
+
+        Iterator<String> keys = encyclopedia.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+
+            JSONObject tank = encyclopedia.getJSONObject(key);
+            int level = tank.getInt("level");
+            int battles = tanks.get(Integer.valueOf(key));
+
+            tier += (level * battles);
+        }
+
+        int battlesCount = ratings.getJSONObject("battles_count").getInt("value");
+        return (tier / battlesCount);
     }
 
 

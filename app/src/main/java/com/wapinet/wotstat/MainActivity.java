@@ -1,10 +1,8 @@
 package com.wapinet.wotstat;
 
 import android.app.Activity;
-import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.Fragment;
-import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.SparseIntArray;
@@ -13,23 +11,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Build;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 
 public class MainActivity extends Activity
@@ -45,6 +38,14 @@ public class MainActivity extends Activity
     protected String apiRatingsUrl = "http://api.worldoftanks.ru/wot/ratings/accounts/?application_id=" + applicationId;
     protected String apiStatsUrl = "http://api.worldoftanks.ru/wot/tanks/stats/?application_id=" + applicationId;
     protected String apiEncyclopediaUrl = "http://api.worldoftanks.ru/wot/encyclopedia/tanks/?application_id=" + applicationId;
+
+    protected String colorRed = "#fe0e01";
+    protected String colorBrown = "#444444";
+    protected String colorYellow = "#fdf109";
+    protected String colorGreen = "#489928";
+    protected String colorTurquoise = "#00cab3";
+    protected String colorLilac = "#d93df9";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -151,12 +152,12 @@ public class MainActivity extends Activity
      * @param username Username
      * @throws Exception
      */
-    private void setUserIdFromUsername(String username) throws Exception
+    private int getUserIdFromUsername(String username) throws Exception
     {
         JSONObject list = (new HttpRequest()).execute(this.apiListUrl + "&type=exact&search=" + username).get();
         handleRequest(list);
 
-        this.userId = list.getJSONArray("data").getJSONObject(0).getInt("account_id");
+        return list.getJSONArray("data").getJSONObject(0).getInt("account_id");
     }
 
     /**
@@ -165,12 +166,10 @@ public class MainActivity extends Activity
      */
     protected void load(String username) throws Exception
     {
-        this.userId = null;
-        this.stats = null;
-        this.ratings = null;
-        this.encyclopedia = null;
-
-        setUserIdFromUsername(username);
+        this.userId = getUserIdFromUsername(username);
+        this.stats = getStats();
+        this.ratings = getRatings();
+        this.encyclopedia = getEncyclopedia();
     }
 
     /**
@@ -178,6 +177,9 @@ public class MainActivity extends Activity
      */
     public void buttonSearchClick(View v)
     {
+        ProgressBar progressBar = (ProgressBar)findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.VISIBLE);
+
         try {
             String username = ((EditText) findViewById(R.id.editText)).getText().toString();
             load(username);
@@ -204,6 +206,8 @@ public class MainActivity extends Activity
             resultTextViewRbr.setText(calculateRbrRating());
         } catch (Exception e) {
             createErrorMessage(e.getMessage());
+        } finally {
+            progressBar.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -441,7 +445,7 @@ public class MainActivity extends Activity
                     )
             );
 
-            return String.valueOf(Math.round(armorSite));
+            return "???";//String.valueOf(Math.round(armorSite));
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -687,24 +691,6 @@ public class MainActivity extends Activity
      */
     private class HttpRequest extends AsyncTask<String, Void, JSONObject>
     {
-        private ProgressDialog spinner;
-
-        @Override
-        protected void onPreExecute()
-        {
-            spinner = new ProgressDialog(MainActivity.this);
-            spinner.setMessage("Load...");
-            spinner.setIndeterminate(false);
-            spinner.setCancelable(true);
-            spinner.show();
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject json)
-        {
-            spinner.dismiss();
-        }
-
         @Override
         protected JSONObject doInBackground(String... links)
         {
